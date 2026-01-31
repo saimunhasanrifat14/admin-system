@@ -72,6 +72,21 @@ exports.Login = AsyncHandler(async (req, res) => {
   user.refreshToken = refreshToken;
   await user.save();
 
+   // SET COOKIE
+  res.cookie("accessToken", accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 15 * 60 * 1000, // 15 minutes
+  });
+
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
+
   // Respond with tokens
   APIResponse.success(res, 200, "Login successful", {
     accessToken,
