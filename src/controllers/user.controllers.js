@@ -53,49 +53,47 @@ exports.RegisterViaInvite = AsyncHandler(async (req, res) => {
 exports.Login = AsyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
-  // Validate input
-  if (!email || !password)
+  if (!email || !password) {
     throw new CustomError(400, "Email and password required");
+  }
 
-  // Find user
   const user = await User.findOne({ email: email.toLowerCase() });
-  if (!user) throw new CustomError(400, "Invalid credentials");
+  if (!user) {
+    throw new CustomError(400, "Invalid credentials");
+  }
 
-  // Check if account is active
   if (user.status === "INACTIVE") {
     throw new CustomError(403, "Account is deactivated. Contact admin.");
   }
 
-  // Check password
   const isMatch = await user.comparePassword(password);
-  if (!isMatch) throw new CustomError(400, "Invalid credentials");
+  if (!isMatch) {
+    throw new CustomError(400, "Invalid credentials");
+  }
 
   const accessToken = user.generateAccessToken();
   const refreshToken = user.generateRefreshToken();
 
-  // Save refresh token in DB
   user.refreshToken = refreshToken;
   await user.save();
 
-  // SET COOKIE
+
   res.cookie("accessToken", accessToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    maxAge: 15 * 60 * 1000, // 15 minutes
+    secure: false, 
+    sameSite: "none",
+    path: "/",
   });
 
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+    secure: false,
+    sameSite: "none",
+    path: "/",
   });
 
-  // Respond with tokens
+  // NO TOKEN IN RESPONSE BODY
   APIResponse.success(res, 200, "Login successful", {
-    accessToken,
-    refreshToken,
     user: {
       id: user._id,
       name: user.name,
@@ -167,8 +165,7 @@ exports.changeUserStatus = async (req, res) => {
 };
 
 exports.getAllUsers = async (req, res) => {
-  const users = await User.find()
-    .select("-password -refreshToken");
+  const users = await User.find().select("-password -refreshToken");
 
   res.status(200).json({
     success: true,

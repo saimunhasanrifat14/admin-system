@@ -6,9 +6,12 @@ exports.authMiddleware = async (req, res, next) => {
   try {
     // Get access token
     const accessToken = req.cookies?.accessToken;
+    console.log("aces token",accessToken);
     if (!accessToken) {
       return next(new CustomError(401, "Authentication required"));
     }
+
+    
     
     // Verify token
     const decoded = jwt.verify(
