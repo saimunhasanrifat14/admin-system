@@ -78,19 +78,16 @@ exports.Login = AsyncHandler(async (req, res) => {
   await user.save();
 
 
-  res.cookie("accessToken", accessToken, {
+  const isProduction = process.env.NODE_ENV === "production";
+  const cookieOptions = {
     httpOnly: true,
-    secure: false, 
-    sameSite: "none",
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax",
     path: "/",
-  });
+  };
 
-  res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: false,
-    sameSite: "none",
-    path: "/",
-  });
+  res.cookie("accessToken", accessToken, cookieOptions);
+  res.cookie("refreshToken", refreshToken, cookieOptions);
 
   // NO TOKEN IN RESPONSE BODY
   APIResponse.success(res, 200, "Login successful", {
