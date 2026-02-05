@@ -6,7 +6,6 @@ const {
   createProject,
   getAllProjects,
   updateProject,
-  deleteProject,
 } = require('../../controllers/project.controllers');
 
 // Authenticated users
@@ -17,9 +16,5 @@ router.route('/get-all-projects').get(authMiddleware, getAllProjects);
 router
   .route('/update-project/:id')
   .put(authMiddleware, roleMiddleware('ADMIN'), updateProject);
-
-router
-  .route('/delete-project/:id')
-  .delete(authMiddleware, roleMiddleware('ADMIN'), deleteProject);
 
 module.exports = router;

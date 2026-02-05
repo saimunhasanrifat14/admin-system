@@ -100,19 +100,13 @@ exports.Login = AsyncHandler(async (req, res) => {
   });
 });
 
-exports.changeUserRole = AsyncHandler(async (req, res) => {
+exports.editUser = AsyncHandler(async (req, res) => {
   const { userId } = req.params;
-  const { role } = req.body;
+  const { role, status } = req.body;
 
-  // Validate role
-  const allowedRoles = ["ADMIN", "MANAGER", "STAFF"];
-  if (!allowedRoles.includes(role)) {
-    throw new CustomError(400, "Invalid role");
-  }
-
-  // Prevent self role change
+  // Prevent self update (role or status)
   if (req.user._id.toString() === userId) {
-    throw new CustomError(403, "You cannot change your own role");
+    throw new CustomError(403, "You cannot update your own role or status");
   }
 
   // Find user
@@ -121,45 +115,40 @@ exports.changeUserRole = AsyncHandler(async (req, res) => {
     throw new CustomError(404, "User not found");
   }
 
-  // Change role
-  user.role = role;
+  // Validate & update role (if provided)
+  if (role) {
+    const allowedRoles = ["ADMIN", "MANAGER", "STAFF"];
+    if (!allowedRoles.includes(role)) {
+      throw new CustomError(400, "Invalid role");
+    }
+    user.role = role;
+  }
+
+  // Validate & update status (if provided)
+  if (status) {
+    const allowedStatus = ["ACTIVE", "INACTIVE"];
+    if (!allowedStatus.includes(status)) {
+      throw new CustomError(400, "Invalid status");
+    }
+    user.status = status;
+  }
+
+  // If nothing to update
+  if (!role && !status) {
+    throw new CustomError(400, "Nothing to update");
+  }
+
   await user.save();
 
-  APIResponse.success(res, 200, "User role updated successfully", {
+  APIResponse.success(res, 200, "User updated successfully", {
     id: user._id,
     name: user.name,
     email: user.email,
     role: user.role,
+    status: user.status,
   });
 });
 
-exports.changeUserStatus = async (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body; // "ACTIVE" | "INACTIVE"
-
-  // validation
-  if (!["ACTIVE", "INACTIVE"].includes(status)) {
-    throw new CustomError(400, "Invalid status value");
-  }
-
-  // admin cannot deactivate himself
-  if (req.user._id.toString() === id) {
-    throw new CustomError(400, "You cannot change your own status");
-  }
-
-  const user = await User.findById(id);
-  if (!user) {
-    throw new CustomError(404, "User not found");
-  }
-
-  user.status = status;
-  await user.save();
-
-  res.status(200).json({
-    success: true,
-    message: `User status changed to ${status}`,
-  });
-};
 
 exports.getAllUsers = async (req, res) => {
   const users = await User.find().select("-password -refreshToken");
@@ -169,4 +158,23 @@ exports.getAllUsers = async (req, res) => {
     count: users.length,
     data: users,
   });
+};
+
+exports.getMe = async (req, res, next) => {
+  try {
+    // req.user is set by authMiddleware
+    if (!req.user) {
+      throw new CustomError(401, "Not authenticated");
+    }
+
+    APIResponse.success(res, 200, "User info retrieved successfully", {
+      id: req.user._id,
+      name: req.user.name,
+      email: req.user.email,
+      role: req.user.role,
+      status: req.user.status,
+    });
+  } catch (err) {
+    next(err);
+  }
 };

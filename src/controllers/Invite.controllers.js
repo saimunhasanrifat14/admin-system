@@ -44,7 +44,7 @@ exports.CreateInvite = AsyncHandler(async (req, res) => {
   // Send invite email
   await emailSend(
     email,
-    "<h1>Welcome</h1><p>Your invite is ready use the link below</p> <a href='http://localhost:3000/register?token=" +
+    "<h1>Welcome</h1><p>Your invite is ready use the link below</p> <a href='http://localhost:5173/register?token=" +
       token +
       "'>Complete Registration</a>",
     "You're invited to join"
@@ -53,7 +53,7 @@ exports.CreateInvite = AsyncHandler(async (req, res) => {
   // Respond
   APIResponse.success(res, 201, "Invite created", {
     // inviteLink: `${process.env.FRONTEND_URL}/register?token=${token}`,
-    inviteLink: `http://localhost:3000/register?token=${token}`,
+    inviteLink: `http://localhost:5173/register?token=${token}`,
   });
 });
 
