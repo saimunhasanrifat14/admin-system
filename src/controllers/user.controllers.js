@@ -77,7 +77,6 @@ exports.Login = AsyncHandler(async (req, res) => {
   user.refreshToken = refreshToken;
   await user.save();
 
-
   const isProduction = process.env.NODE_ENV === "production";
   const cookieOptions = {
     httpOnly: true,
@@ -149,8 +148,7 @@ exports.editUser = AsyncHandler(async (req, res) => {
   });
 });
 
-
-exports.getAllUsers = async (req, res) => {
+exports.getAllUsers = AsyncHandler(async (req, res) => {
   const users = await User.find().select("-password -refreshToken");
 
   res.status(200).json({
@@ -158,23 +156,35 @@ exports.getAllUsers = async (req, res) => {
     count: users.length,
     data: users,
   });
-};
+});
 
-exports.getMe = async (req, res, next) => {
-  try {
-    // req.user is set by authMiddleware
-    if (!req.user) {
-      throw new CustomError(401, "Not authenticated");
-    }
-
-    APIResponse.success(res, 200, "User info retrieved successfully", {
-      id: req.user._id,
-      name: req.user.name,
-      email: req.user.email,
-      role: req.user.role,
-      status: req.user.status,
-    });
-  } catch (err) {
-    next(err);
+exports.getMe = AsyncHandler(async (req, res, next) => {
+  // req.user is set by authMiddleware
+  if (!req.user) {
+    throw new CustomError(401, "Not authenticated");
   }
-};
+
+  APIResponse.success(res, 200, "User info retrieved successfully", {
+    id: req.user._id,
+    name: req.user.name,
+    email: req.user.email,
+    role: req.user.role,
+    status: req.user.status,
+  });
+});
+
+exports.logout = AsyncHandler(async (req, res) => {
+  const isProduction = process.env.NODE_ENV === "production";
+
+  const cookieOptions = {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax",
+    path: "/",
+  };
+
+  res.clearCookie("accessToken", cookieOptions);
+  res.clearCookie("refreshToken", cookieOptions);
+
+  APIResponse.success(res, 200, "Logged out successfully");
+});

@@ -6,6 +6,7 @@ const {
   getAllUsers,
   editUser,
   getMe,
+  logout,
 } = require("../../controllers/user.controllers");
 const { authMiddleware } = require("../../middlewares/auth.middleware");
 const { roleMiddleware } = require("../../middlewares/role.middleware");
@@ -18,5 +19,7 @@ router
 
 router.route("/users").get(getAllUsers);
 router.route("/me").get(authMiddleware, getMe);
+
+router.route("/logout").post(authMiddleware, logout);
 
 module.exports = router;
