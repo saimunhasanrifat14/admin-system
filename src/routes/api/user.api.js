@@ -7,6 +7,7 @@ const {
   editUser,
   getMe,
   logout,
+  refreshAccessToken,
 } = require("../../controllers/user.controllers");
 const { authMiddleware } = require("../../middlewares/auth.middleware");
 const { roleMiddleware } = require("../../middlewares/role.middleware");
@@ -21,5 +22,7 @@ router.route("/users").get(getAllUsers);
 router.route("/me").get(authMiddleware, getMe);
 
 router.route("/logout").post(authMiddleware, logout);
+
+router.post("/refresh-token", refreshAccessToken);
 
 module.exports = router;

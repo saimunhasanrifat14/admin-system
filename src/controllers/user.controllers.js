@@ -188,3 +188,59 @@ exports.logout = AsyncHandler(async (req, res) => {
 
   APIResponse.success(res, 200, "Logged out successfully");
 });
+
+exports.refreshAccessToken = AsyncHandler(async (req, res) => {
+  // 1) Read cookie
+  const incomingRefreshToken = req.cookies.refreshToken;
+
+  if (!incomingRefreshToken) {
+    throw new CustomError(400, "Refresh token required");
+  }
+
+  // 2) Verify JWT signature
+  let decoded;
+  try {
+    decoded = jwt.verify(
+      incomingRefreshToken,
+      process.env.REFRESH_TOKEN_SECRET,
+    );
+  } catch (err) {
+    throw new CustomError(403, "Invalid refresh token");
+  }
+
+  // 3) Find user
+  const user = await User.findById(decoded._id);
+  if (!user) {
+    throw new CustomError(404, "User not found");
+  }
+
+  // 4) Match DB stored refresh token (VERY IMPORTANT SECURITY STEP)
+  if (user.refreshToken !== incomingRefreshToken) {
+    throw new CustomError(403, "Refresh token mismatch (possible token theft)");
+  }
+
+  // 5) Create new ACCESS token
+  const newAccessToken = user.generateAccessToken();
+
+  // (optional but recommended) rotate refresh token
+  // const newRefreshToken = user.generateRefreshToken();
+  // user.refreshToken = newRefreshToken;
+  // await user.save();
+
+  // 6) Send cookie
+  const isProduction = process.env.NODE_ENV === "production";
+  const cookieOptions = {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax",
+    path: "/",
+  };
+
+  res.cookie("accessToken", newAccessToken, cookieOptions);
+  // res.cookie("refreshToken", newRefreshToken, cookieOptions); // if rotating
+
+  return res.status(200).json({
+    success: true,
+    message: "Access token refreshed",
+  });
+});
